@@ -1,0 +1,13 @@
+POST http://localhost:8080/tax/calculations
+Content-Type: application/json
+
+{
+  "totalIncome": 500000.0,
+  "wht": 0.0,
+  "allowances": [
+    {
+      "allowanceType": "donation",
+      "amount": 0.0
+    }
+  ]
+}
