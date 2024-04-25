@@ -1,6 +1,7 @@
 package tax
 
 import (
+	"math"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -18,7 +19,8 @@ type TaxRequestObject struct {
 }
 
 type TaxResponseObject struct {
-	Tax float64 `json:"tax"`
+	Tax       float64 `json:"tax"`
+	TaxRefund float64 `json:"taxRefund,omitempty"`
 }
 
 type handler struct {
@@ -33,13 +35,19 @@ func (h handler) TaxCalculateHandler(c echo.Context) error {
 	if err := c.Bind(&taxRequestObject); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "bad request body", err.Error())
 	}
-	tax := taxCalculate(taxRequestObject.TotalIncome)
-	res := TaxResponseObject{tax}
+	tax := taxCalculate(taxRequestObject)
+	res := TaxResponseObject{}
+	if tax < 0 {
+		res.Tax = 0
+		res.TaxRefund = math.Abs(tax)
+	} else {
+		res.Tax = tax
+	}
 	return c.JSON(http.StatusOK, res)
 }
 
-func taxCalculate(income float64) float64 {
-	taxable := income - 60000
+func taxCalculate(inputData TaxRequestObject) float64 {
+	taxable := inputData.TotalIncome - 60000
 
 	taxLevels := []struct {
 		tierDiff   float64
@@ -64,5 +72,5 @@ func taxCalculate(income float64) float64 {
 		tax += taxable * taxLevel.multiplier
 		taxable = 0
 	}
-	return tax
+	return tax - inputData.Wht
 }

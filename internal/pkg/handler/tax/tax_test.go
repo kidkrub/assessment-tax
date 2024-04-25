@@ -13,22 +13,27 @@ import (
 func TestTaxCalculate(t *testing.T) {
 	// Arrange
 	testCases := []struct {
-		income   float64
-		expected float64
+		inputData TaxRequestObject
+		expected  float64
 	}{
-		{60000.0, 0},
-		{500000.0, 29000.0},
-		{560000.0, 35000.0},
-		{1060000.0, 110000.0},
-		{2060000.0, 310000.0},
-		{2060001.0, 310000.35}}
+		{TaxRequestObject{60000.0, 0.0, nil}, 0},
+		{TaxRequestObject{500000.0, 0.0, nil}, 29000.0},
+		{TaxRequestObject{560000.0, 0.0, nil}, 35000.0},
+		{TaxRequestObject{1060000.0, 0.0, nil}, 110000.0},
+		{TaxRequestObject{2060000.0, 0.0, nil}, 310000.0},
+		{TaxRequestObject{2060001.0, 0.0, nil}, 310000.35},
+		{TaxRequestObject{150000.0, 1000.0, nil}, -1000.0},
+		{TaxRequestObject{500000.0, 25000.0, nil}, 4000.0},
+		{TaxRequestObject{500000.0, 29000.0, nil}, 0.0},
+		{TaxRequestObject{500000.0, 30000.0, nil}, -1000.0},
+	}
 
 	// Act & Assert
 	for _, tc := range testCases {
 		// Act
-		actualTax := taxCalculate(tc.income)
+		actualTax := taxCalculate(tc.inputData)
 		// Assert
-		assert.Equal(t, tc.expected, actualTax, "tax calculation is incorrect for %.2f case", tc.income)
+		assert.Equal(t, tc.expected, actualTax, "tax calculation is incorrect for %.2f case", tc.inputData.TotalIncome)
 	}
 }
 
@@ -44,9 +49,14 @@ func TestTaxCalculateHandler(t *testing.T) {
 		{`{"totalIncome":1060000.0,"wht":0.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":110000.0}`},
 		{`{"totalIncome":2060000.0,"wht":0.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":310000.0}`},
 		{`{"totalIncome":2060001.0,"wht":0.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":310000.35}`},
+		{`{"totalIncome":150000.0,"wht":1000.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":0.0,"taxRefund":1000.0}`},
+		{`{"totalIncome":500000.0,"wht":25000.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":4000.0}`},
+		{`{"totalIncome":500000.0,"wht":29000.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":0.0}`},
+		{`{"totalIncome":500000.0,"wht":30000.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":0.0,"taxRefund":1000.0}`},
 	}
 
 	for _, tc := range testCases {
+		// Act
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tc.reqBody))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
