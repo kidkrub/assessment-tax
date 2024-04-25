@@ -9,18 +9,16 @@ import (
 	"time"
 
 	"github.com/kidkrub/assessment-tax/internal/pkg/config"
-	"github.com/labstack/echo/v4"
+	"github.com/kidkrub/assessment-tax/internal/pkg/router"
 )
 
 func main() {
 	cfg := config.New()
 	serverConfig := cfg.Server()
-	e := echo.New()
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, Go Bootcamp!")
-	})
 
 	server := fmt.Sprintf("%s:%d", serverConfig.Hostname, serverConfig.PORT)
+
+	e := router.InitRoutes()
 
 	ctx, shutdown := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer shutdown()
