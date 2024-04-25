@@ -1,14 +1,15 @@
-package main
+package router
 
 import (
-	"github.com/labstack/echo/v4"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 )
 
-func main() {
+func InitRoutes() *echo.Echo {
 	e := echo.New()
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, Go Bootcamp!")
 	})
-	e.Logger.Fatal(e.Start(":1323"))
+	return e
 }
