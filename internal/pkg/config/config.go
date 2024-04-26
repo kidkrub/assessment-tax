@@ -35,7 +35,7 @@ func (c *cfg) Server() Server {
 }
 
 func (c *cfg) Database() Database {
-	return Database{c.envString(cDatabaseUrl, "")}
+	return Database{c.envString(cDatabaseUrl, "postgresql://postgres:password@localhost:5432/postgres?sslmode=disable")}
 }
 
 func (c *cfg) envString(key, defaultValue string) string {
