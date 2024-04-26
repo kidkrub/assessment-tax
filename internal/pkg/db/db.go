@@ -26,3 +26,9 @@ func SetDeductionValue(db *sql.DB, key string, value float64) float64 {
 	db.QueryRow("INSERT INTO \"deductions\" (\"name\", maxAmount) VALUES ($1, $2) ON CONFLICT (\"name\") DO UPDATE SET maxAmount = EXCLUDED.maxAmount RETURNING maxAmount;", key, value).Scan(&value)
 	return value
 }
+
+func GetDeductionValue(db *sql.DB, key string) float64 {
+	var value float64
+	db.QueryRow("SELECT 'maxAmount' FROM \"dedictions\" WHERE \"name\" = $1;", key).Scan(&value)
+	return value
+}
