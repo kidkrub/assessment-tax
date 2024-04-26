@@ -15,11 +15,12 @@ import (
 func TestSetDeductionValueHandler(t *testing.T) {
 	// Arrange
 	testCases := []struct {
+		ptype           string
 		reqBody         string
 		sqlFn           func() (*sql.DB, error)
 		expectedResBody string
 	}{
-		{`{"amount":70000.0}`, func() (*sql.DB, error) {
+		{"personal", `{"amount":70000.0}`, func() (*sql.DB, error) {
 			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 			if err != nil {
 				return nil, err
@@ -28,6 +29,15 @@ func TestSetDeductionValueHandler(t *testing.T) {
 			mock.ExpectQuery("INSERT INTO \"deductions\" (\"name\", maxAmount) VALUES ($1, $2) ON CONFLICT (\"name\") DO UPDATE SET maxAmount = EXCLUDED.maxAmount RETURNING maxAmount;").WithArgs("personal", 70000.0).WillReturnRows(row)
 			return db, err
 		}, `{"personalDeduction":70000.0}`},
+		{"k-receipt", `{"amount":70000.0}`, func() (*sql.DB, error) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			if err != nil {
+				return nil, err
+			}
+			row := sqlmock.NewRows([]string{"maxAmount"}).AddRow(70000.0)
+			mock.ExpectQuery("INSERT INTO \"deductions\" (\"name\", maxAmount) VALUES ($1, $2) ON CONFLICT (\"name\") DO UPDATE SET maxAmount = EXCLUDED.maxAmount RETURNING maxAmount;").WithArgs("personal", 70000.0).WillReturnRows(row)
+			return db, err
+		}, `{"kReceipt":70000.0}`},
 	}
 
 	for _, tc := range testCases {
@@ -37,6 +47,9 @@ func TestSetDeductionValueHandler(t *testing.T) {
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
+		c.SetPath("/:type")
+		c.SetParamNames("type")
+		c.SetParamValues(tc.ptype)
 
 		db, err := tc.sqlFn()
 		h := New(db)
@@ -52,24 +65,39 @@ func TestSetDeductionValueHandler(t *testing.T) {
 
 func TestErrorSetDeductionValueHandler(t *testing.T) {
 	testCases := []struct {
+		ptype       string
 		reqBody     string
 		sqlFn       func() (*sql.DB, error)
 		expectedErr error
 	}{
-		{`{"amount":9999.0}`, func() (*sql.DB, error) {
+		{"personal", `{"amount":9999.0}`, func() (*sql.DB, error) {
 			db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 			if err != nil {
 				return nil, err
 			}
 			return db, err
 		}, echo.NewHTTPError(http.StatusBadRequest, "amount must between 10,000 - 100,000")},
-		{`{"amount":100001.0}`, func() (*sql.DB, error) {
+		{"personal", `{"amount":100001.0}`, func() (*sql.DB, error) {
 			db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 			if err != nil {
 				return nil, err
 			}
 			return db, err
 		}, echo.NewHTTPError(http.StatusBadRequest, "amount must between 10,000 - 100,000")},
+		{"k-receipt", `{"amount":-1.0}`, func() (*sql.DB, error) {
+			db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			if err != nil {
+				return nil, err
+			}
+			return db, err
+		}, echo.NewHTTPError(http.StatusBadRequest, "amount must between 0 - 100,000")},
+		{"k-receipt", `{"amount":100001.0}`, func() (*sql.DB, error) {
+			db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			if err != nil {
+				return nil, err
+			}
+			return db, err
+		}, echo.NewHTTPError(http.StatusBadRequest, "amount must between 0 - 100,000")},
 	}
 
 	for _, tc := range testCases {
@@ -79,6 +107,10 @@ func TestErrorSetDeductionValueHandler(t *testing.T) {
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
+
+		c.SetPath("/:type")
+		c.SetParamNames("type")
+		c.SetParamValues(tc.ptype)
 
 		db, err := tc.sqlFn()
 		h := New(db)
