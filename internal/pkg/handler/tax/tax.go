@@ -1,8 +1,10 @@
 package tax
 
 import (
+	"encoding/csv"
 	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -29,6 +31,12 @@ type TaxLevel struct {
 	Tax   float64 `json:"tax"`
 }
 
+type TaxUploadResponseObject struct {
+	TotalIncome float64 `json:"totalIncome"`
+	Tax         float64 `json:"tax"`
+	TaxRefund   float64 `json:"taxRefund,omitempty"`
+}
+
 type handler struct {
 }
 
@@ -51,6 +59,51 @@ func (h handler) TaxCalculateHandler(c echo.Context) error {
 		res.Tax = tax
 	}
 	return c.JSON(http.StatusOK, res)
+}
+
+func (h handler) TaxUploadCalulateHandler(c echo.Context) error {
+	file, err := c.FormFile("taxFile")
+	if err != nil {
+		return err
+	}
+	if file.Filename != "taxes.csv" {
+		return echo.NewHTTPError(http.StatusBadRequest, "File name must be 'taxes.csv")
+	}
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	reader := csv.NewReader(src)
+	reader.FieldsPerRecord = 3
+	records, err := reader.ReadAll()
+	if err != nil {
+		echo.NewHTTPError(http.StatusBadRequest, "Invalid file format.", err.Error())
+	}
+	if len(records) < 2 || records[0][0] != "totalIncome" || records[0][1] != "wht" || records[0][2] != "donation" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid file format. The CSV file must have a header row with 'totalIncome', 'wht' and 'donation'")
+	}
+	taxes := []TaxUploadResponseObject{}
+	for _, record := range records[1:] {
+		totalIncome, _ := strconv.ParseFloat(record[0], 64)
+		wht, _ := strconv.ParseFloat(record[1], 64)
+		donation, _ := strconv.ParseFloat(record[2], 64)
+		requestObject := TaxRequestObject{totalIncome, wht, []Allowance{{"donation", donation}}}
+		tax, _ := taxCalculate(requestObject)
+		res := TaxUploadResponseObject{}
+		res.TotalIncome = totalIncome
+		if tax < 0 {
+			res.Tax = 0
+			res.TaxRefund = math.Abs(tax)
+		} else {
+			res.Tax = tax
+		}
+		taxes = append(taxes, res)
+	}
+	return c.JSON(http.StatusOK, struct {
+		Taxes []TaxUploadResponseObject `json:"taxes"`
+	}{taxes})
 }
 
 func taxCalculate(inputData TaxRequestObject) (tax float64, taxLevelsObject []TaxLevel) {

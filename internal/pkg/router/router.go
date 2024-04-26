@@ -19,10 +19,11 @@ func InitRoutes(db *sql.DB) *echo.Echo {
 	th := tax.New()
 	ah := admin.New(db)
 
+	e.POST("/tax/calculations", th.TaxCalculateHandler)
+	e.POST("/tax/calculations/upload-csv", th.TaxUploadCalulateHandler)
+
 	ag := e.Group("/admin")
 	ag.Use(middleware.BasicAuth(cmw.BasicAuthenticate()))
-
-	e.POST("/tax/calculations", th.TaxCalculateHandler)
 	ag.POST("/deductions/:type", ah.SetDeductionValueHandler)
 
 	return e
