@@ -149,6 +149,36 @@ func TestTaxCalculate(t *testing.T) {
 			{"1,000,001-2,000,000", 0.0},
 			{"2,000,001 ขึ้นไป", 0.0},
 		}}},
+		{TaxRequestObject{500000.0, 0.0, []Allowance{{"k-receipt", 200000.0}, {"donation", 100000.0}}}, struct {
+			tax       float64
+			taxlevels []TaxLevel
+		}{14000.0, []TaxLevel{
+			{"0-150,000", 0.0},
+			{"150,001-500,000", 14000.0},
+			{"500,001-1,000,000", 0.0},
+			{"1,000,001-2,000,000", 0.0},
+			{"2,000,001 ขึ้นไป", 0.0},
+		}}},
+		{TaxRequestObject{500000.0, 0.0, []Allowance{{"k-receipt", 50000.0}, {"donation", 100000.0}}}, struct {
+			tax       float64
+			taxlevels []TaxLevel
+		}{14000.0, []TaxLevel{
+			{"0-150,000", 0.0},
+			{"150,001-500,000", 14000.0},
+			{"500,001-1,000,000", 0.0},
+			{"1,000,001-2,000,000", 0.0},
+			{"2,000,001 ขึ้นไป", 0.0},
+		}}},
+		{TaxRequestObject{500000.0, 0.0, []Allowance{{"k-receipt", 49999.0}, {"donation", 100000.0}}}, struct {
+			tax       float64
+			taxlevels []TaxLevel
+		}{14000.1, []TaxLevel{
+			{"0-150,000", 0.0},
+			{"150,001-500,000", 14000.1},
+			{"500,001-1,000,000", 0.0},
+			{"1,000,001-2,000,000", 0.0},
+			{"2,000,001 ขึ้นไป", 0.0},
+		}}},
 	}
 
 	// Act & Assert
@@ -180,6 +210,9 @@ func TestTaxCalculateHandler(t *testing.T) {
 		{`{"totalIncome":500000.0,"wht":0.0,"allowances":[{"allowanceType":"donation","amount":200000.0}]}`, `{"tax":19000.0,"taxLevel":[{"level":"0-150,000","tax":0.0},{"level":"150,001-500,000","tax":19000.0},{"level":"500,001-1,000,000","tax":0.0},{"level":"1,000,001-2,000,000","tax":0.0},{"level":"2,000,001 ขึ้นไป","tax":0.0}]}`},
 		{`{"totalIncome":500000.0,"wht":0.0,"allowances":[{"allowanceType":"donation","amount":100000.0}]}`, `{"tax":19000.0,"taxLevel":[{"level":"0-150,000","tax":0.0},{"level":"150,001-500,000","tax":19000.0},{"level":"500,001-1,000,000","tax":0.0},{"level":"1,000,001-2,000,000","tax":0.0},{"level":"2,000,001 ขึ้นไป","tax":0.0}]}`},
 		{`{"totalIncome":500000.0,"wht":0.0,"allowances":[{"allowanceType":"donation","amount":50000.0}]}`, `{"tax":24000.0,"taxLevel":[{"level":"0-150,000","tax":0.0},{"level":"150,001-500,000","tax":24000.0},{"level":"500,001-1,000,000","tax":0.0},{"level":"1,000,001-2,000,000","tax":0.0},{"level":"2,000,001 ขึ้นไป","tax":0.0}]}`},
+		{`{"totalIncome":500000.0,"wht":0.0,"allowances":[{"allowanceType":"k-receipt","amount":200000.0},{"allowanceType":"donation","amount":100000.0}]}`, `{"tax":14000.0,"taxLevel":[{"level":"0-150,000","tax":0.0},{"level":"150,001-500,000","tax":14000.0},{"level":"500,001-1,000,000","tax":0.0},{"level":"1,000,001-2,000,000","tax":0.0},{"level":"2,000,001 ขึ้นไป","tax":0.0}]}`},
+		{`{"totalIncome":500000.0,"wht":0.0,"allowances":[{"allowanceType":"k-receipt","amount":50000.0},{"allowanceType":"donation","amount":100000.0}]}`, `{"tax":14000.0,"taxLevel":[{"level":"0-150,000","tax":0.0},{"level":"150,001-500,000","tax":14000.0},{"level":"500,001-1,000,000","tax":0.0},{"level":"1,000,001-2,000,000","tax":0.0},{"level":"2,000,001 ขึ้นไป","tax":0.0}]}`},
+		{`{"totalIncome":500000.0,"wht":0.0,"allowances":[{"allowanceType":"k-receipt","amount":49999.0},{"allowanceType":"donation","amount":100000.0}]}`, `{"tax":14000.1,"taxLevel":[{"level":"0-150,000","tax":0.0},{"level":"150,001-500,000","tax":14000.1},{"level":"500,001-1,000,000","tax":0.0},{"level":"1,000,001-2,000,000","tax":0.0},{"level":"2,000,001 ขึ้นไป","tax":0.0}]}`},
 	}
 
 	for _, tc := range testCases {

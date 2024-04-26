@@ -52,3 +52,22 @@ Content-Type: text/csv
 
 < ./taxes.csv
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+POST http://localhost:8080/tax/calculations
+Content-Type: application/json
+
+{
+  "totalIncome": 500000.0,
+  "wht": 0.0,
+  "allowances": [
+    {
+      "allowanceType": "k-receipt",
+      "amount": 200000.0
+    },
+    {
+      "allowanceType": "donation",
+      "amount": 100000.0
+    }
+  ]
+}
