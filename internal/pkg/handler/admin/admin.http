@@ -1,0 +1,7 @@
+POST http://localhost:8080/admin/deductions/personal
+Authorization: Basic adminTax:admin!
+Content-Type: application/json
+
+{
+  "amount": 70000.0
+}
