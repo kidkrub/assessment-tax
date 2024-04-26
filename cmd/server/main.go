@@ -3,22 +3,30 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/kidkrub/assessment-tax/internal/pkg/config"
+	"github.com/kidkrub/assessment-tax/internal/pkg/db"
 	"github.com/kidkrub/assessment-tax/internal/pkg/router"
 )
 
 func main() {
 	cfg := config.New()
 	serverConfig := cfg.Server()
+	dbConfig := cfg.Database()
+
+	db, err := db.InitDB(dbConfig.DatabaseUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	server := fmt.Sprintf("%s:%d", serverConfig.Hostname, serverConfig.PORT)
 
-	e := router.InitRoutes()
+	e := router.InitRoutes(db)
 
 	ctx, shutdown := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer shutdown()

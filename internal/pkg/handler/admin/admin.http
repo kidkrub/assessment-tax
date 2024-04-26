@@ -1,0 +1,6 @@
+POST http://localhost:8080/admin/deductions/personal
+Content-Type: application/json
+
+{
+  "amount": 70000.0
+}
