@@ -49,6 +49,19 @@ func (h handler) TaxCalculateHandler(c echo.Context) error {
 func taxCalculate(inputData TaxRequestObject) float64 {
 	taxable := inputData.TotalIncome - 60000
 
+	if len(inputData.Allowances) > 0 {
+		donationAmount := 0.0
+		for _, allowance := range inputData.Allowances {
+			if allowance.AllowanceType == "donation" {
+				donationAmount += allowance.Amount
+			}
+		}
+		if donationAmount > 100000 {
+			donationAmount = 100000
+		}
+		taxable -= donationAmount
+	}
+
 	taxLevels := []struct {
 		tierDiff   float64
 		multiplier float64

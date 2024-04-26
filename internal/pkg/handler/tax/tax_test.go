@@ -26,6 +26,9 @@ func TestTaxCalculate(t *testing.T) {
 		{TaxRequestObject{500000.0, 25000.0, nil}, 4000.0},
 		{TaxRequestObject{500000.0, 29000.0, nil}, 0.0},
 		{TaxRequestObject{500000.0, 30000.0, nil}, -1000.0},
+		{TaxRequestObject{500000.0, 0.0, []Allowance{{"donation", 200000.0}}}, 19000.0},
+		{TaxRequestObject{500000.0, 0.0, []Allowance{{"donation", 100000.0}}}, 19000.0},
+		{TaxRequestObject{500000.0, 0.0, []Allowance{{"donation", 50000.0}}}, 24000.0},
 	}
 
 	// Act & Assert
@@ -53,6 +56,9 @@ func TestTaxCalculateHandler(t *testing.T) {
 		{`{"totalIncome":500000.0,"wht":25000.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":4000.0}`},
 		{`{"totalIncome":500000.0,"wht":29000.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":0.0}`},
 		{`{"totalIncome":500000.0,"wht":30000.0,"allowances":[{"allowanceType":"donation","amount":0.0}]}`, `{"tax":0.0,"taxRefund":1000.0}`},
+		{`{"totalIncome":500000.0,"wht":0.0,"allowances":[{"allowanceType":"donation","amount":200000.0}]}`, `{"tax":19000.0}`},
+		{`{"totalIncome":500000.0,"wht":0.0,"allowances":[{"allowanceType":"donation","amount":100000.0}]}`, `{"tax":19000.0}`},
+		{`{"totalIncome":500000.0,"wht":0.0,"allowances":[{"allowanceType":"donation","amount":50000.0}]}`, `{"tax":24000.0}`},
 	}
 
 	for _, tc := range testCases {
