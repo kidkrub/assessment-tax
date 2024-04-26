@@ -12,6 +12,8 @@ services:
       interval: 1s
       timeout: 5s
       retries: 10
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
   server:
     environment:
       PORT: ${PORT:-1323}
