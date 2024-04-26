@@ -19,8 +19,14 @@ type TaxRequestObject struct {
 }
 
 type TaxResponseObject struct {
-	Tax       float64 `json:"tax"`
-	TaxRefund float64 `json:"taxRefund,omitempty"`
+	Tax       float64    `json:"tax"`
+	TaxRefund float64    `json:"taxRefund,omitempty"`
+	TaxLevels []TaxLevel `json:"taxLevel"`
+}
+
+type TaxLevel struct {
+	Level string  `json:"level"`
+	Tax   float64 `json:"tax"`
 }
 
 type handler struct {
@@ -35,8 +41,9 @@ func (h handler) TaxCalculateHandler(c echo.Context) error {
 	if err := c.Bind(&taxRequestObject); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "bad request body", err.Error())
 	}
-	tax := taxCalculate(taxRequestObject)
+	tax, taxLevels := taxCalculate(taxRequestObject)
 	res := TaxResponseObject{}
+	res.TaxLevels = taxLevels
 	if tax < 0 {
 		res.Tax = 0
 		res.TaxRefund = math.Abs(tax)
@@ -46,7 +53,7 @@ func (h handler) TaxCalculateHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func taxCalculate(inputData TaxRequestObject) float64 {
+func taxCalculate(inputData TaxRequestObject) (tax float64, taxLevelsObject []TaxLevel) {
 	taxable := inputData.TotalIncome - 60000
 
 	if len(inputData.Allowances) > 0 {
@@ -63,27 +70,45 @@ func taxCalculate(inputData TaxRequestObject) float64 {
 	}
 
 	taxLevels := []struct {
+		level      string
 		tierDiff   float64
 		multiplier float64
 	}{
-		{150000, 0},
-		{350000, 0.1},
-		{500000, 0.15},
-		{1000000, 0.2},
-		{-1, 0.35},
+		{"0-150,000", 150000, 0},
+		{"150,001-500,000", 350000, 0.1},
+		{"500,001-1,000,000", 500000, 0.15},
+		{"1,000,001-2,000,000", 1000000, 0.2},
+		{"2,000,001 ขึ้นไป", -1, 0.35},
 	}
-	tax := 0.0
 	for _, taxLevel := range taxLevels {
 		if taxable < 0 {
+			taxLevelsObject = []TaxLevel{
+				{"0-150,000", 0.0},
+				{"150,001-500,000", 0.0},
+				{"500,001-1,000,000", 0.0},
+				{"1,000,001-2,000,000", 0.0},
+				{"2,000,001 ขึ้นไป", 0.0},
+			}
 			break
 		}
 		if taxable > taxLevel.tierDiff && taxLevel.tierDiff != -1 {
-			tax += taxLevel.tierDiff * taxLevel.multiplier
+			tierTax := taxLevel.tierDiff * taxLevel.multiplier
+			tax += tierTax
 			taxable -= taxLevel.tierDiff
+			taxLevelObject := TaxLevel{taxLevel.level, tierTax}
+			taxLevelsObject = append(taxLevelsObject, taxLevelObject)
 			continue
 		}
-		tax += taxable * taxLevel.multiplier
+		if taxable == 0 {
+			taxLevelObject := TaxLevel{taxLevel.level, 0}
+			taxLevelsObject = append(taxLevelsObject, taxLevelObject)
+			continue
+		}
+		tierTax := taxable * taxLevel.multiplier
+		tax += tierTax
 		taxable = 0
+		taxLevelObject := TaxLevel{taxLevel.level, tierTax}
+		taxLevelsObject = append(taxLevelsObject, taxLevelObject)
 	}
-	return tax - inputData.Wht
+	return tax - inputData.Wht, taxLevelsObject
 }
