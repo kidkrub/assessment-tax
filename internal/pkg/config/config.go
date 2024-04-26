@@ -20,10 +20,17 @@ type Database struct {
 	DatabaseUrl string
 }
 
+type BasicCredential struct {
+	Username string
+	Password string
+}
+
 const (
 	cHostname    = "HOSTNAME"
 	cPort        = "PORT"
 	cDatabaseUrl = "DATABASE_URL"
+	cUsername    = "ADMIN_USERNAME"
+	cPassword    = "ADMIN_PASSWORD"
 )
 
 func New() *cfg {
@@ -36,6 +43,10 @@ func (c *cfg) Server() Server {
 
 func (c *cfg) Database() Database {
 	return Database{c.envString(cDatabaseUrl, "postgresql://postgres:password@localhost:5432/postgres?sslmode=disable")}
+}
+
+func (c *cfg) BasicCredential() BasicCredential {
+	return BasicCredential{c.envString(cUsername, "adminTax"), c.envString(cPassword, "admin!")}
 }
 
 func (c *cfg) envString(key, defaultValue string) string {
