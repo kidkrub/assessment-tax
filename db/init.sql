@@ -4,4 +4,5 @@ CREATE TABLE IF NOT EXISTS "deductions" (
     maxAmount REAL
 );
 INSERT INTO "deductions" ("name", maxAmount)
-VALUES ('personal', 60000.0);
+VALUES ('personal', 60000.0),
+('k-receipt', 50000.0);

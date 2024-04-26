@@ -13,7 +13,8 @@ type SetDuctionRequestObject struct {
 }
 
 type SetDuctionResponseObject struct {
-	PersonalDeduction float64 `json:"personalDeduction"`
+	PersonalDeduction float64 `json:"personalDeduction,omitempty"`
+	KReceipt          float64 `json:"kReceipt,omitempty"`
 }
 
 type handler struct {
@@ -30,9 +31,24 @@ func (h handler) SetDeductionValueHandler(c echo.Context) error {
 	if err := c.Bind(&setDuctionRequestObject); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "bad request body", err.Error())
 	}
-	if setDuctionRequestObject.Amount > 100000 || setDuctionRequestObject.Amount < 10000 {
-		return echo.NewHTTPError(http.StatusBadRequest, "amount must between 10,000 - 100,000")
+	if dType == "personal" {
+		if setDuctionRequestObject.Amount > 100000 || setDuctionRequestObject.Amount < 10000 {
+			return echo.NewHTTPError(http.StatusBadRequest, "amount must between 10,000 - 100,000")
+		}
 	}
+	if dType == "k-receipt" {
+		if setDuctionRequestObject.Amount > 100000 || setDuctionRequestObject.Amount < 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "amount must between 0 - 100,000")
+		}
+	}
+
 	value := db.SetDeductionValue(h.db, dType, setDuctionRequestObject.Amount)
-	return c.JSON(http.StatusOK, SetDuctionResponseObject{value})
+	res := SetDuctionResponseObject{}
+	if dType == "personal" {
+		res.PersonalDeduction = value
+	}
+	if dType == "k-receipt" {
+		res.KReceipt = value
+	}
+	return c.JSON(http.StatusOK, res)
 }
