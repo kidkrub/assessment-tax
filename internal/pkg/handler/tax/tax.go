@@ -111,15 +111,22 @@ func taxCalculate(inputData TaxRequestObject) (tax float64, taxLevelsObject []Ta
 
 	if len(inputData.Allowances) > 0 {
 		donationAmount := 0.0
+		kreceiptAmount := 0.0
 		for _, allowance := range inputData.Allowances {
 			if allowance.AllowanceType == "donation" {
 				donationAmount += allowance.Amount
+			}
+			if allowance.AllowanceType == "k-receipt" {
+				kreceiptAmount += allowance.Amount
 			}
 		}
 		if donationAmount > 100000 {
 			donationAmount = 100000
 		}
-		taxable -= donationAmount
+		if kreceiptAmount > 50000 {
+			kreceiptAmount = 50000
+		}
+		taxable -= (donationAmount + kreceiptAmount)
 	}
 
 	taxLevels := []struct {
