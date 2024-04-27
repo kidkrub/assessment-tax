@@ -1,11 +1,13 @@
 package tax
 
 import (
+	"database/sql"
 	"encoding/csv"
 	"math"
 	"net/http"
 	"strconv"
 
+	"github.com/kidkrub/assessment-tax/internal/pkg/db"
 	"github.com/labstack/echo/v4"
 )
 
@@ -38,10 +40,11 @@ type TaxUploadResponseObject struct {
 }
 
 type handler struct {
+	db *sql.DB
 }
 
-func New() *handler {
-	return &handler{}
+func New(db *sql.DB) *handler {
+	return &handler{db}
 }
 
 func (h handler) TaxCalculateHandler(c echo.Context) error {
@@ -49,7 +52,10 @@ func (h handler) TaxCalculateHandler(c echo.Context) error {
 	if err := c.Bind(&taxRequestObject); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "bad request body", err.Error())
 	}
-	tax, taxLevels := taxCalculate(taxRequestObject)
+	tax, taxLevels := taxCalculate(taxRequestObject, map[string]float64{
+		"personal":  db.GetDeductionValue(h.db, "personal"),
+		"k-receipt": db.GetDeductionValue(h.db, "k-receipt"),
+	})
 	res := TaxResponseObject{}
 	res.TaxLevels = taxLevels
 	if tax < 0 {
@@ -90,7 +96,10 @@ func (h handler) TaxUploadCalulateHandler(c echo.Context) error {
 		wht, _ := strconv.ParseFloat(record[1], 64)
 		donation, _ := strconv.ParseFloat(record[2], 64)
 		requestObject := TaxRequestObject{totalIncome, wht, []Allowance{{"donation", donation}}}
-		tax, _ := taxCalculate(requestObject)
+		tax, _ := taxCalculate(requestObject, map[string]float64{
+			"personal":  db.GetDeductionValue(h.db, "personal"),
+			"k-receipt": db.GetDeductionValue(h.db, "k-receipt"),
+		})
 		res := TaxUploadResponseObject{}
 		res.TotalIncome = totalIncome
 		if tax < 0 {
@@ -106,8 +115,10 @@ func (h handler) TaxUploadCalulateHandler(c echo.Context) error {
 	}{taxes})
 }
 
-func taxCalculate(inputData TaxRequestObject) (tax float64, taxLevelsObject []TaxLevel) {
-	taxable := inputData.TotalIncome - 60000
+func taxCalculate(inputData TaxRequestObject, maxDeductions map[string]float64) (tax float64, taxLevelsObject []TaxLevel) {
+	personalDeduct := maxDeductions["personal"]
+	maxkReceiptDeduct := maxDeductions["k-receipt"]
+	taxable := inputData.TotalIncome - personalDeduct
 
 	if len(inputData.Allowances) > 0 {
 		donationAmount := 0.0
@@ -123,8 +134,8 @@ func taxCalculate(inputData TaxRequestObject) (tax float64, taxLevelsObject []Ta
 		if donationAmount > 100000 {
 			donationAmount = 100000
 		}
-		if kreceiptAmount > 50000 {
-			kreceiptAmount = 50000
+		if kreceiptAmount > maxkReceiptDeduct {
+			kreceiptAmount = maxkReceiptDeduct
 		}
 		taxable -= (donationAmount + kreceiptAmount)
 	}

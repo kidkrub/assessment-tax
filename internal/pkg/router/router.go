@@ -16,7 +16,7 @@ func InitRoutes(db *sql.DB) *echo.Echo {
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, Go Bootcamp!")
 	})
-	th := tax.New()
+	th := tax.New(db)
 	ah := admin.New(db)
 
 	e.POST("/tax/calculations", th.TaxCalculateHandler)
