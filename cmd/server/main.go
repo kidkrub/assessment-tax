@@ -38,6 +38,7 @@ func main() {
 	}()
 
 	<-ctx.Done()
+	fmt.Println("shutting down the server")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
