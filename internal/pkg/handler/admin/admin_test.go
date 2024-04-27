@@ -29,15 +29,15 @@ func TestSetDeductionValueHandler(t *testing.T) {
 			mock.ExpectQuery("INSERT INTO \"deductions\" (\"name\", maxAmount) VALUES ($1, $2) ON CONFLICT (\"name\") DO UPDATE SET maxAmount = EXCLUDED.maxAmount RETURNING maxAmount;").WithArgs("personal", 70000.0).WillReturnRows(row)
 			return db, err
 		}, `{"personalDeduction":70000.0}`},
-		{"k-receipt", `{"amount":70000.0}`, func() (*sql.DB, error) {
+		{"k-receipt", `{"amount":80000.0}`, func() (*sql.DB, error) {
 			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 			if err != nil {
 				return nil, err
 			}
-			row := sqlmock.NewRows([]string{"maxAmount"}).AddRow(70000.0)
-			mock.ExpectQuery("INSERT INTO \"deductions\" (\"name\", maxAmount) VALUES ($1, $2) ON CONFLICT (\"name\") DO UPDATE SET maxAmount = EXCLUDED.maxAmount RETURNING maxAmount;").WithArgs("personal", 70000.0).WillReturnRows(row)
+			row := sqlmock.NewRows([]string{"maxAmount"}).AddRow(80000.0)
+			mock.ExpectQuery("INSERT INTO \"deductions\" (\"name\", maxAmount) VALUES ($1, $2) ON CONFLICT (\"name\") DO UPDATE SET maxAmount = EXCLUDED.maxAmount RETURNING maxAmount;").WithArgs("k-receipt", 80000.0).WillReturnRows(row)
 			return db, err
-		}, `{"kReceipt":70000.0}`},
+		}, `{"kReceipt":80000.0}`},
 	}
 
 	for _, tc := range testCases {
