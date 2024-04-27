@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ktaxes
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+  server:
+    environment:
+      PORT: ${PORT:-1323}
+      DATABASE_URL: ${DATABASE_URL}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - '${PORT:-1323}:${PORT:-1323}'
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true

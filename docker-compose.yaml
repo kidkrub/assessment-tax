@@ -14,18 +14,4 @@ services:
       retries: 10
     volumes:
       - ./db:/docker-entrypoint-initdb.d/
-  server:
-    environment:
-      PORT: ${PORT:-1323}
-      DATABASE_URL: ${DATABASE_URL}
-      ADMIN_USERNAME: ${ADMIN_USERNAME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    ports:
-      - '${PORT:-1323}:${PORT:-1323}'
-    depends_on:
-      postgres:
-        condition: service_healthy
-        restart: true
+  
