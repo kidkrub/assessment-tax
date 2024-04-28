@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY ./ ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./
 
 
 # test stage it's going to skip if DOCKER_BUILDKIT is enabled
